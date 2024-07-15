@@ -12,29 +12,22 @@ jobs:
   test:
     strategy:
       matrix:
-        os: [ubuntu-20.04, ubuntu-latest, windows-latest]
+        os: [ubuntu-latest]
         include:
-          - os: windows-latest
-            os_short: win
-            compiler_cc: msvc
           - os: ubuntu-latest
             os_short: linux
             compiler_cc: clang
             compiler_cxx: clang++
-          - os: ubuntu-20.04
-            os_short: linux
-            compiler_cc: clang-8
-            compiler_cxx: clang++-8
       fail-fast: false
     runs-on: ${{ matrix.os }}
     name: ${{ matrix.os_short }}-${{ matrix.compiler_cc }}
     env:
-      SDKS: '["episode1","css","tf2","l4d2","csgo"]'
-      ARCH: x86,x86_64
+      SDKS: '["l4d2"]'
+      ARCH: x86
       DEPENDENCIES_FOLDER: dependencies
       DEPENDENCIES_ROOT: ${{ github.workspace }}/dependencies
-      MYSQL_VERSION: '5.5'
-      MMSOURCE_VERSION: '1.12'
+      MYSQL_VERSION: '5.7'
+      MMSOURCE_VERSION: '2.0'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -54,9 +47,9 @@ jobs:
 
       # Setup Python for AMBuild
       - uses: actions/setup-python@v5
-        name: Setup Python 3.8
+        name: Setup Python 3.11
         with:
-          python-version: 3.8
+          python-version: 3.11
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip setuptools wheel
@@ -96,3 +89,8 @@ jobs:
           cd build
           python ../configure.py --enable-optimize --sdks=${{ join(fromJSON(env.SDKS)) }} --targets=${{ env.ARCH }} --mms-path=${{ env.DEPENDENCIES_ROOT }}/mmsource-${{ env.MMSOURCE_VERSION }} --hl2sdk-root=${{ env.DEPENDENCIES_ROOT }} --mysql-path=${{ env.DEPENDENCIES_ROOT }}/mysql-${{ env.MYSQL_VERSION }} --mysql64-path=${{ env.DEPENDENCIES_ROOT }}/mysql-${{ env.MYSQL_VERSION }}-x86_64
           ambuild
+      - name: Uploading package
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.event.repository.name }}-${{ matrix.os_short }}
+          path: sourcemod/build/package
